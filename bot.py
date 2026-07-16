@@ -45,22 +45,28 @@ def save_media_locally(message, chat_id):
     media_dir = f"media/{chat_id}"
     os.makedirs(media_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
     if message.content_type == 'photo':
-        file_id = message.photo[-1].file_id; ext = ".jpg"; mtype = "photo"
+        file_id = message.photo[-1].file_id
+        ext = ".jpg"
+        mtype = "photo"
     elif message.content_type == 'video':
-        file_id = message.video.file_id; ext = ".mp4"; mtype = "video"
+        file_id = message.video.file_id
+        ext = ".mp4"
+        mtype = "video"
     elif message.content_type == 'video_note':
-        file_id = message.video_note.file_id; ext = ".mp4"; mtype = "video"
+        file_id = message.video_note.file_id
+        ext = ".mp4"
+        mtype = "video"
     elif message.content_type == 'voice':
-        file_id = message.voice.file_id; ext = ".ogg"; mtype = "voice"
+        file_id = message.voice.file_id
+        ext = ".ogg"
+        mtype = "voice"
     elif message.content_type == 'document':
         file_id = message.document.file_id
         ext = os.path.splitext(message.document.file_name or "file")[1]
         mtype = "document"
     else:
         return None, None
-
     try:
         file_info = bot.get_file(file_id)
         downloaded = bot.download_file(file_info.file_path)
@@ -88,19 +94,23 @@ def format_link(field, value, real_url=None):
             url = value
         elif field == "Telegram":
             tg = re.search(r'@(\w+)', str(value))
-            if tg: url = f"https://t.me/{tg.group(1)}"
+            if tg:
+                url = f"https://t.me/{tg.group(1)}"
             else:
                 num = re.search(r'(\d{9,})', str(value))
-                if num: url = f"https://t.me/{num.group(1)}"
+                if num:
+                    url = f"https://t.me/{num.group(1)}"
         elif field == "Email" and "@" in str(value):
             em = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', str(value))
-            if em: url = f"mailto:{em.group(0)}"
+            if em:
+                url = f"mailto:{em.group(0)}"
     return f'<a href="{url}">{val}</a>' if url else val
 
 def parse_client_data(txt_content, extra_text, entities_list):
     full_text = (txt_content or "") + "\n" + (extra_text or "")
     parsed = {}
-    field_urls = {}for ent in entities_list:
+    field_urls = {}
+    for ent in entities_list:
         if ent.type == 'text_link' and ent.url:
             url = ent.url
             if "vk.com" in url.lower() or "/id" in url.lower():
@@ -116,19 +126,15 @@ def parse_client_data(txt_content, extra_text, entities_list):
         return re.sub(r'^[\U0001F000-\U0001FFFF\U00002700-\U000027BF\U0001F300-\U0001F5FF\U0001F600-\U0001F64F\U0001F680-\U0001F6FF\s🧢🧑‍💻👨‍🦳💬📧👁🔎📱🏦]+', '', line).strip()
 
     lines = full_text.split('\n')
-
     for line in lines:
         cleaned = clean_line(line)
         if not cleaned or ':' not in cleaned:
             continue
-
         parts = cleaned.split(':', 1)
         if len(parts) < 2:
             continue
-
         field_raw = parts[0].strip().lower()
         value = parts[1].strip()
-
         if not value or value in ["===", "—", "-", "пусто", "нет"] or value.startswith("==="):
             continue
 
@@ -150,7 +156,6 @@ def parse_client_data(txt_content, extra_text, entities_list):
         if "мобильный банк" in field_raw:
             parsed["Мобильный банк"] = value
             continue
-
         if field_raw.startswith("telegram"):
             tg_match = re.search(r'@(\w+)', value)
             if tg_match:
@@ -207,7 +212,9 @@ def parse_client_data(txt_content, extra_text, entities_list):
         if field in parsed:
             parsed[field + "_url"] = url
         else:
-            parsed[field] = urlif "Вконтакте" not in parsed:
+            parsed[field] = url
+
+    if "Вконтакте" not in parsed:
         vk = re.search(r'https?://(?:www\.)?vk\.com/[^\s\)]+', full_text, re.IGNORECASE)
         if vk:
             parsed["Вконтакте"] = vk.group(0)
@@ -273,7 +280,6 @@ def handle_content(message):
 def callback(call):
     chat_id = call.message.chat.id
     ud = user_data[chat_id]
-
     if call.data == "send_all":
         if not ud.get("txt") and not ud.get("extra_text"):
             bot.answer_callback_query(call.id, "❌ Нужен .txt или текст!")
@@ -289,7 +295,8 @@ def callback(call):
                     if item["type"] == "photo":
                         media_group.append(types.InputMediaPhoto(open(item["path"], 'rb')))
                     elif item["type"] in ["video", "video_note"]:
-                        media_group.append(types.InputMediaVideo(open(item["path"], 'rb'), supports_streaming=True))if media_group:
+                        media_group.append(types.InputMediaVideo(open(item["path"], 'rb'), supports_streaming=True))
+                if media_group:
                     bot.send_media_group(chat_id, media_group)
             except:
                 for item in ud["media"][:10]:
@@ -304,7 +311,7 @@ def callback(call):
                     except:
                         pass
 
-        # === КАРТОЧКА + ПРИВЕТ (по одному в строке) ===
+        # === КАРТОЧКА ===
         caption = "<blockquote>"
         for field in FIELDS_ORDER:
             if field in parsed and parsed[field]:
@@ -312,10 +319,9 @@ def callback(call):
                 real_url = parsed.get(field + "_url")
                 linked_value = format_link(field, value, real_url)
                 caption += f"<b>{field}:</b> {linked_value}\n\n"
-
         caption += "\nНа данный момент у тебя 2 исхода:\n\n"
         caption += "1. 5000p — закрываешь вопрос навсегда, и мы стираем все данные.\n\n"
-        caption += "2. Полный слив — вceм poдным, дрyзьям, рaбoтодaтeлям, в гoрoдскиe чaты.\n\n"
+        caption += "2. Полный слив — вceм poдным, дрyзьям, рaбoтoдaтeлям, в гoрoдскиe чaты.\n\n"
         caption += "❗️ИГНОР - РАССЫЛКА, БЛОКИРУЕШЬ- РАССЫЛКА , ОЧИЩАЕШЬ ПЕРЕПИСКУ - РАССЫЛКА❗️\n\n"
         caption += "А также полностью вся информация у выше стоящих людей, я всего лишь пешка имеющая небольшую часть информации, если ты не скидываешь бабки - передаю им чтоб начинали рассылку, и они уже дальше занимаются тобой.\n\n"
         caption += "Телеграм канал со сливами: https://t.me/+O7WsdDV7o3JmMDFh"
@@ -332,5 +338,3 @@ def callback(call):
 
 print("🤖 Бот запущен...")
 bot.infinity_polling(none_stop=True, interval=1, timeout=20)
-
-
