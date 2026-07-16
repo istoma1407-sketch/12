@@ -1,0 +1,43 @@
+if media_group:
+                    bot.send_media_group(chat_id, media_group)
+            except:
+                for item in ud["media"][:10]:
+                    try:
+                        if item["type"] == "photo":
+                            bot.send_photo(chat_id, open(item["path"], 'rb'))
+                        elif item["type"] in ["video", "video_note"]:
+                            bot.send_video(chat_id, open(item["path"], 'rb'), supports_streaming=True)
+                        elif item["type"] == "voice":
+                            bot.send_voice(chat_id, open(item["path"], 'rb'))
+                        time.sleep(0.7)
+                    except:
+                        pass
+
+        # === КАРТОЧКА + ПРИВЕТ (по одному в строке) ===
+        caption = "<blockquote>"
+        for field in FIELDS_ORDER:
+            if field in parsed and parsed[field]:
+                value = str(parsed[field]).strip()
+                real_url = parsed.get(field + "_url")
+                linked_value = format_link(field, value, real_url)
+                caption += f"<b>{field}:</b> {linked_value}\n\n"
+
+        caption += "\nНа данный момент у тебя 2 исхода:\n\n"
+        caption += "1. 5000p — закрываешь вопрос навсегда, и мы стираем все данные.\n\n"
+        caption += "2. Полный слив — вceм poдным, дрyзьям, рaбoтодaтeлям, в гoрoдскиe чaты.\n\n"
+        caption += "❗️ИГНОР - РАССЫЛКА, БЛОКИРУЕШЬ- РАССЫЛКА , ОЧИЩАЕШЬ ПЕРЕПИСКУ - РАССЫЛКА❗️\n\n"
+        caption += "А также полностью вся информация у выше стоящих людей, я всего лишь пешка имеющая небольшую часть информации, если ты не скидываешь бабки - передаю им чтоб начинали рассылку, и они уже дальше занимаются тобой.\n\n"
+        caption += "Телеграм канал со сливами: https://t.me/+O7WsdDV7o3JmMDFh"
+        caption += "</blockquote>"
+
+        bot.send_message(chat_id, caption, parse_mode='HTML', disable_web_page_preview=False)
+
+        user_data[chat_id] = {"media": [], "txt": None, "extra_text": "", "txt_file_name": None, "entities": []}
+
+    elif call.data == "clear":
+        user_data[chat_id] = {"media": [], "txt": None, "extra_text": "", "txt_file_name": None, "entities": []}
+        bot.answer_callback_query(call.id, "🗑 Очищено")
+        bot.send_message(chat_id, "Сессия очищена", reply_markup=get_keyboard())
+
+print("🤖 Бот запущен...")
+bot.infinity_polling(none_stop=True, interval=1, timeout=20)
